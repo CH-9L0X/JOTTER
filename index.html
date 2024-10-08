@@ -2,12 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notebook Writing Reciter</title>
+    <title>Notebook Writing Assist</title>
     <style>
         body {
-            background-color: #2c2c2c; /* Dark gray background */
+            background-color: #2c2c2c;
             color: white;
             font-family: "Trebuchet MS", sans-serif;
             display: flex;
@@ -18,7 +17,7 @@
         }
 
         .container {
-            background-color: #3a3a3a; /* Slightly lighter gray */
+            background-color: #3a3a3a;
             padding: 30px;
             border-radius: 12px;
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
@@ -47,7 +46,7 @@
         }
 
         button, input[type="button"] {
-            background-color: #4CAF50; /* Green */
+            background-color: #4CAF50;
             color: white;
             padding: 10px 20px;
             margin: 5px;
@@ -57,7 +56,7 @@
         }
 
         button:hover, input[type="button"]:hover {
-            background-color: #45a049; /* Darker green on hover */
+            background-color: #45a049;
         }
 
         .read-word {
@@ -88,6 +87,20 @@
             Q: 0.7, R: 0.5, S: 0.5, T: 0.4, U: 0.5, V: 0.4, W: 0.7, X: 0.5,
             Y: 0.5, Z: 0.4
         };
+
+        const punctuationMap = {
+            '.': 'period',
+            ',': 'comma',
+            '!': 'exclamation mark',
+            '?': 'question mark',
+            ':': 'colon',
+            ';': 'semicolon',
+            '"': 'quotation mark',
+            "'": 'quote',
+            '-': 'hyphen',
+            '(': 'open parenthesis',
+            ')': 'close parenthesis'
+        };
         
         let words = [];
         let currentWordIndex = 0;
@@ -103,10 +116,9 @@
         });
 
         function calculateWordDelay(word) {
-            // Sum the weights of each letter in the word
             let totalWeight = 0;
             for (let letter of word) {
-                const weight = letterWeights[letter.toUpperCase()] || 0.5; // Default weight if letter not in list
+                const weight = letterWeights[letter.toUpperCase()] || 0.5;
                 totalWeight += weight;
             }
             return totalWeight;
@@ -116,9 +128,9 @@
             // Reset state
             currentWordIndex = 0;
             isPaused = false;
-            $("#text").val($("#text").val().trim()); // Remove extra whitespace
-            words = $("#text").val().split(/\s+/); // Split text into words
-            document.getElementById("text").value = ""; // Clear text area to display colored words in real-time
+            $("#text").val($("#text").val().trim()); 
+            words = $("#text").val().split(/\s+/); 
+            document.getElementById("text").value = "";
 
             readNextWord();
         }
@@ -126,7 +138,8 @@
         function readNextWord() {
             if (currentWordIndex < words.length) {
                 const word = words[currentWordIndex];
-                responsiveVoice.speak(word, $('#voiceselection').val(), {onend: () => {
+                const formattedWord = formatWordForSpeech(word);
+                responsiveVoice.speak(formattedWord, $('#voiceselection').val(), {onend: () => {
                     if (!isPaused) {
                         colorWord(currentWordIndex);
                         let delayMultiplier = parseInt(document.getElementById('delayMultiplier').value);
@@ -136,6 +149,16 @@
                     }
                 }});
             }
+        }
+
+        function formatWordForSpeech(word) {
+            let formattedWord = word;
+            Object.keys(punctuationMap).forEach(punctuation => {
+                if (word.includes(punctuation)) {
+                    formattedWord = formattedWord.replace(punctuation, ` ${punctuationMap[punctuation]} `);
+                }
+            });
+            return formattedWord.trim();
         }
 
         function colorWord(index) {
@@ -154,8 +177,8 @@
             } else {
                 isPaused = true;
                 pauseButton.innerText = "Resume";
-                clearTimeout(intervalId); // Stop the interval
-                responsiveVoice.cancel(); // Cancel current word speech
+                clearTimeout(intervalId);
+                responsiveVoice.cancel(); 
             }
         }
 
