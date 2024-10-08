@@ -9,7 +9,7 @@
         body {
             background-color: #2c2c2c; /* Dark gray background */
             color: white;
-            font-family: Arial, sans-serif;
+            font-family: "Trebuchet MS", sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -33,15 +33,17 @@
             margin-bottom: 20px;
         }
 
-        #text {
+        #text, #delayMultiplier, #voiceselection {
             width: 100%;
-            height: 100px;
             margin-bottom: 15px;
+            padding: 10px;
             font-size: 1.1em;
-        }
-
-        #controls {
-            margin-top: 15px;
+            background-color: black;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-family: "Trebuchet MS", sans-serif;
+            font-weight: bold;
         }
 
         button, input[type="button"] {
@@ -56,14 +58,6 @@
 
         button:hover, input[type="button"]:hover {
             background-color: #45a049; /* Darker green on hover */
-        }
-
-        #voiceselection, #delayMultiplier {
-            margin-bottom: 15px;
-            padding: 10px;
-            font-size: 1.1em;
-            border-radius: 8px;
-            border: none;
         }
 
         .read-word {
@@ -88,6 +82,13 @@
     <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
     <script src="https://code.responsivevoice.org/responsivevoice.js?key=B8pvlt8Z"></script>
     <script>
+        const letterWeights = {
+            A: 0.6, B: 0.7, C: 0.4, D: 0.5, E: 0.4, F: 0.5, G: 0.6, H: 0.5,
+            I: 0.3, J: 0.4, K: 0.6, L: 0.3, M: 0.7, N: 0.6, O: 0.4, P: 0.6,
+            Q: 0.7, R: 0.5, S: 0.5, T: 0.4, U: 0.5, V: 0.4, W: 0.7, X: 0.5,
+            Y: 0.5, Z: 0.4
+        };
+        
         let words = [];
         let currentWordIndex = 0;
         let isPaused = false;
@@ -100,6 +101,16 @@
         $.each(voicelist, function () {
             vselect.append($("<option />").val(this.name).text(this.name));
         });
+
+        function calculateWordDelay(word) {
+            // Sum the weights of each letter in the word
+            let totalWeight = 0;
+            for (let letter of word) {
+                const weight = letterWeights[letter.toUpperCase()] || 0.5; // Default weight if letter not in list
+                totalWeight += weight;
+            }
+            return totalWeight;
+        }
 
         function startReading() {
             // Reset state
@@ -119,7 +130,8 @@
                     if (!isPaused) {
                         colorWord(currentWordIndex);
                         let delayMultiplier = parseInt(document.getElementById('delayMultiplier').value);
-                        intervalId = setTimeout(readNextWord, word.length * delayMultiplier);
+                        let wordDelay = calculateWordDelay(word) * delayMultiplier;
+                        intervalId = setTimeout(readNextWord, wordDelay);
                         currentWordIndex++;
                     }
                 }});
