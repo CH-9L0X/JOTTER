@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notebook Writing Assist</title>
+    <title>Notebook Writing Reciter</title>
     <style>
         body {
             background-color: #2c2c2c;
@@ -62,6 +62,29 @@
         .read-word {
             color: blue;
         }
+
+        .progress-container {
+            width: 100%;
+            background-color: #ddd;
+            border-radius: 25px;
+            margin-top: 15px;
+            height: 25px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: #4CAF50;
+            border-radius: 25px;
+            text-align: center;
+            color: white;
+            line-height: 25px;
+        }
+
+        .info {
+            margin-top: 15px;
+            font-size: 1.1em;
+        }
     </style>
 </head>
 <body>
@@ -69,13 +92,21 @@
         <h1>Notebook Writing Reciter</h1>
         <textarea id="text" placeholder="Enter your text here"></textarea><br>
         <label for="delayMultiplier">Delay Multiplier:</label>
-        <input type="number" id="delayMultiplier" value="700" min="50" step="50">
-        <br>
+        <input type="number" id="delayMultiplier" value="200" min="50" step="50"><br>
+        <div id="timeEstimate" class="info"></div><br>
         <select id="voiceselection"></select><br>
         <input type="button" value="Read Text" onclick="startReading()">
         <button id="pauseButton" onclick="pauseResumeReading()">Pause</button>
         <button onclick="goBackWords(5)">Go Back 5 Words</button>
-        <div id="controls"></div>
+
+        <div class="progress-container">
+            <div id="progressBar" class="progress-bar"></div>
+        </div>
+
+        <div id="progressInfo" class="info">
+            Time Left: <span id="timeLeft"></span><br>
+            Words Completed: <span id="wordsCompleted"></span>
+        </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
@@ -89,17 +120,17 @@
         };
 
         const punctuationMap = {
-            '.': '  full stop',
-            ',': '  comma',
-            '!': '  exclamation mark',
-            '?': '  question mark',
-            ':': '  colon',
-            ';': '  semicolon',
-            '"': '  double quote',
-            "'": '  single quote',
-            '-': '  hyphen',
-            '(': '  open bracket',
-            ')': '  close bracket'
+            '.': 'period',
+            ',': 'comma',
+            '!': 'exclamation mark',
+            '?': 'question mark',
+            ':': 'colon',
+            ';': 'semicolon',
+            '"': 'quotation mark',
+            "'": 'quote',
+            '-': 'hyphen',
+            '(': 'open parenthesis',
+            ')': 'close parenthesis'
         };
         
         let words = [];
@@ -107,6 +138,8 @@
         let isPaused = false;
         let pauseButton = document.getElementById('pauseButton');
         let intervalId;
+        let totalTime = 0;
+        let totalWords = 0;
 
         // Populate the voice selection dropdown
         const voicelist = responsiveVoice.getVoices();
@@ -114,6 +147,8 @@
         $.each(voicelist, function () {
             vselect.append($("<option />").val(this.name).text(this.name));
         });
+
+        document.getElementById('text').addEventListener('input', calculateTimeEstimate);
 
         function calculateWordDelay(word) {
             let totalWeight = 0;
@@ -124,13 +159,22 @@
             return totalWeight;
         }
 
+        function calculateTimeEstimate() {
+            const text = document.getElementById("text").value;
+            words = text.trim().split(/\s+/);
+            let delayMultiplier = parseInt(document.getElementById('delayMultiplier').value);
+            let estimatedTime = words.reduce((sum, word) => sum + (calculateWordDelay(word) * delayMultiplier), 0);
+            totalTime = estimatedTime / 1000; // Convert to seconds
+            document.getElementById("timeEstimate").innerText = `Estimated Time: ${Math.floor(totalTime / 60)}m ${Math.floor(totalTime % 60)}s`;
+        }
+
         function startReading() {
             // Reset state
             currentWordIndex = 0;
             isPaused = false;
-            $("#text").val($("#text").val().trim()); 
-            words = $("#text").val().split(/\s+/); 
-            document.getElementById("text").value = "";
+            totalWords = words.length;
+            document.getElementById('progressBar').style.width = '0%';
+            document.getElementById('wordsCompleted').innerText = `0/${totalWords} words`;
 
             readNextWord();
         }
@@ -141,7 +185,7 @@
                 const formattedWord = formatWordForSpeech(word);
                 responsiveVoice.speak(formattedWord, $('#voiceselection').val(), {onend: () => {
                     if (!isPaused) {
-                        colorWord(currentWordIndex);
+                        updateProgress();
                         let delayMultiplier = parseInt(document.getElementById('delayMultiplier').value);
                         let wordDelay = calculateWordDelay(word) * delayMultiplier;
                         intervalId = setTimeout(readNextWord, wordDelay);
@@ -152,21 +196,22 @@
         }
 
         function formatWordForSpeech(word) {
-            let formattedWord = word;
             Object.keys(punctuationMap).forEach(punctuation => {
                 if (word.includes(punctuation)) {
-                    formattedWord = formattedWord.replace(punctuation, ` ${punctuationMap[punctuation]} `);
+                    word = word.replace(punctuation, ` ${punctuationMap[punctuation]} `);
                 }
             });
-            return formattedWord.trim();
+            return word.trim();
         }
 
-        function colorWord(index) {
-            const coloredWords = words.map((word, i) => 
-                i <= index ? `<span class="read-word">${word}</span>` : word
-            ).join(' ');
-            document.getElementById('text').value = coloredWords.replace(/<\/?span[^>]*>/g, '');
-            document.getElementById("text").innerHTML = coloredWords;
+        function updateProgress() {
+            let progressPercent = ((currentWordIndex + 1) / totalWords) * 100;
+            document.getElementById('progressBar').style.width = progressPercent + '%';
+
+            let elapsed = (currentWordIndex / totalWords) * totalTime;
+            let remaining = totalTime - elapsed;
+            document.getElementById('timeLeft').innerText = `${Math.floor(remaining / 60)}m ${Math.floor(remaining % 60)}s left`;
+            document.getElementById('wordsCompleted').innerText = `${currentWordIndex + 1}/${totalWords} words`;
         }
 
         function pauseResumeReading() {
@@ -178,7 +223,7 @@
                 isPaused = true;
                 pauseButton.innerText = "Resume";
                 clearTimeout(intervalId);
-                responsiveVoice.cancel(); 
+                responsiveVoice.cancel();
             }
         }
 
