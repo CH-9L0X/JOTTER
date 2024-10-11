@@ -121,7 +121,7 @@
     <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
     <script src="https://code.responsivevoice.org/responsivevoice.js?key=B8pvlt8Z"></script>
     <script>
-        const updateDate = "Updated on October 8, 2024"; 
+        const updateDate = "October 8, 2024";
         const letterWeights = {
             A: 0.6, B: 0.7, C: 0.4, D: 0.5, E: 0.4, F: 0.5, G: 0.6, H: 0.5,
             I: 0.3, J: 0.4, K: 0.6, L: 0.3, M: 0.7, N: 0.6, O: 0.4, P: 0.6,
@@ -150,7 +150,6 @@
         let intervalId;
         let totalWords = 0;
 
-        // Populate the voice selection dropdown
         const voicelist = responsiveVoice.getVoices();
         const vselect = $("#voiceselection");
         $.each(voicelist, function () {
@@ -166,6 +165,14 @@
             document.getElementById('wordsCompleted').innerText = `0/${totalWords} words`;
 
             readNextWord();
+        }
+
+        function calculateWordDelay(word) {
+            let delay = 0;
+            for (let char of word.toUpperCase()) {
+                delay += letterWeights[char] || 0.5;
+            }
+            return delay;
         }
 
         function readNextWord() {
