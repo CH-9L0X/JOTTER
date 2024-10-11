@@ -104,7 +104,6 @@
         <textarea id="text" placeholder="Enter your text here"></textarea><br>
         <label for="delayMultiplier">Delay Multiplier:</label>
         <input type="number" id="delayMultiplier" value="200" min="50" step="50"><br>
-        <div id="timeEstimate" class="info"></div><br>
         <select id="voiceselection"></select><br>
         <input type="button" value="Read Text" onclick="startReading()">
         <button id="pauseButton" onclick="pauseResumeReading()">Pause</button>
@@ -115,7 +114,6 @@
         </div>
 
         <div id="progressInfo" class="info">
-            Time Left: <span id="timeLeft"></span><br>
             Words Completed: <span id="wordsCompleted"></span>
         </div>
     </div>
@@ -123,7 +121,7 @@
     <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
     <script src="https://code.responsivevoice.org/responsivevoice.js?key=B8pvlt8Z"></script>
     <script>
-        const updateDate = "Updated October 8, 2024"; 
+        const updateDate = "Updated on October 8, 2024"; 
         const letterWeights = {
             A: 0.6, B: 0.7, C: 0.4, D: 0.5, E: 0.4, F: 0.5, G: 0.6, H: 0.5,
             I: 0.3, J: 0.4, K: 0.6, L: 0.3, M: 0.7, N: 0.6, O: 0.4, P: 0.6,
@@ -150,35 +148,17 @@
         let isPaused = false;
         let pauseButton = document.getElementById('pauseButton');
         let intervalId;
-        let totalTime = 0;
         let totalWords = 0;
 
+        // Populate the voice selection dropdown
         const voicelist = responsiveVoice.getVoices();
         const vselect = $("#voiceselection");
         $.each(voicelist, function () {
             vselect.append($("<option />").val(this.name).text(this.name));
         });
 
-        document.getElementById('text').addEventListener('input', calculateTimeEstimate);
-
-        function calculateWordDelay(word) {
-            let totalWeight = 0;
-            for (let letter of word) {
-                const weight = letterWeights[letter.toUpperCase()] || 0.5;
-                totalWeight += weight;
-            }
-            return totalWeight;
-        }
-
-        function calculateTimeEstimate() {
-            const text = document.getElementById("text").value;
-            words = text.trim().split(/\s+/);
-            let delayMultiplier = parseInt(document.getElementById('delayMultiplier').value);
-            totalTime = words.reduce((sum, word) => sum + (calculateWordDelay(word) * delayMultiplier), 0) / 1000; // Convert to seconds
-            document.getElementById("timeEstimate").innerText = `Estimated Time: ${Math.floor(totalTime / 60)}m ${Math.floor(totalTime % 60)}s`;
-        }
-
         function startReading() {
+            words = document.getElementById("text").value.trim().split(/\s+/);
             currentWordIndex = 0;
             isPaused = false;
             totalWords = words.length;
@@ -216,10 +196,6 @@
         function updateProgress() {
             let progressPercent = ((currentWordIndex + 1) / totalWords) * 100;
             document.getElementById('progressBar').style.width = progressPercent + '%';
-
-            let elapsed = (currentWordIndex / totalWords) * totalTime;
-            let remaining = totalTime - elapsed;
-            document.getElementById('timeLeft').innerText = `${Math.floor(remaining / 60)}m ${Math.floor(remaining % 60)}s left`;
             document.getElementById('wordsCompleted').innerText = `${currentWordIndex + 1}/${totalWords} words`;
         }
 
