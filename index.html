@@ -97,7 +97,7 @@
     </style>
 </head>
 <body>
-    <div class="update-info">Updated on: October 8, 2024</div>
+    <div class="update-info">Updated on: October 13, 2024</div>
 
     <div class="container">
         <h1>Notebook Writing Reciter</h1>
@@ -162,27 +162,28 @@
         function readNextWord() {
             if (currentWordIndex < words.length) {
                 const word = words[currentWordIndex];
-                if (word === "LEAVE A LINE") {
-                    responsiveVoice.speak(word, $('#voiceselection').val(), {onend: () => handleWordEnd(0)});
-                } else {
-                    let delayMultiplier = parseInt(document.getElementById('delayMultiplier').value);
-                    let wordDelay = calculateWordDelay(word) * delayMultiplier;
-                    let punctuationDelay = 300; 
-
-                    let textToSpeak = word.replace(/([.,!?;:])/g, (match) => ` ${match}`);
-                    responsiveVoice.speak(textToSpeak, $('#voiceselection').val(), {
-                        onend: () => handleWordEnd(wordDelay + punctuationDelay)
-                    });
-                }
+                let wordParts = word.match(/[\w]+|[^\s\w]/g) || []; 
+                speakWordParts(wordParts);
             }
         }
 
-        function handleWordEnd(delay) {
-            if (!isPaused) {
-                updateProgress();
-                intervalId = setTimeout(readNextWord, delay);
+        function speakWordParts(parts) {
+            if (parts.length === 0) {
                 currentWordIndex++;
+                updateProgress();
+                if (!isPaused) {
+                    let delayMultiplier = parseInt(document.getElementById('delayMultiplier').value);
+                    let wordDelay = calculateWordDelay(words[currentWordIndex - 1]) * delayMultiplier;
+                    intervalId = setTimeout(readNextWord, wordDelay);
+                }
+                return;
             }
+            const part = parts.shift();
+            responsiveVoice.speak(part, $('#voiceselection').val(), { onend: () => {
+                if (!isPaused) {
+                    setTimeout(() => speakWordParts(parts), 150);
+                }
+            }});
         }
 
         function updateProgress() {
