@@ -97,7 +97,7 @@
     </style>
 </head>
 <body>
-    <div class="update-info">Updated on: October 13, 2024</div>
+    <div class="update-info">Updated on: October 8, 2024</div>
 
     <div class="container">
         <h1>Notebook Writing Reciter</h1>
@@ -126,20 +126,6 @@
             I: 0.3, J: 0.4, K: 0.6, L: 0.3, M: 0.7, N: 0.6, O: 0.4, P: 0.6,
             Q: 0.7, R: 0.5, S: 0.5, T: 0.4, U: 0.5, V: 0.4, W: 0.7, X: 0.5,
             Y: 0.5, Z: 0.4
-        };
-
-        const punctuationMap = {
-            '.': 'period',
-            ',': 'comma',
-            '!': 'exclamation mark',
-            '?': 'question mark',
-            ':': 'colon',
-            ';': 'semicolon',
-            '"': 'quotation mark',
-            "'": 'quote',
-            '-': 'hyphen',
-            '(': 'open parenthesis',
-            ')': 'close parenthesis'
         };
 
         let words = [];
@@ -176,24 +162,27 @@
         function readNextWord() {
             if (currentWordIndex < words.length) {
                 const word = words[currentWordIndex];
-                const formattedWord = formatWordForSpeech(word);
-                responsiveVoice.speak(formattedWord, $('#voiceselection').val(), {onend: () => {
-                    if (!isPaused) {
-                        updateProgress();
-                        let delayMultiplier = parseInt(document.getElementById('delayMultiplier').value);
-                        let wordDelay = (word === "LEAVE A LINE") ? 0 : calculateWordDelay(word) * delayMultiplier;
-                        intervalId = setTimeout(readNextWord, wordDelay);
-                        currentWordIndex++;
-                    }
-                }});
+                if (word === "LEAVE A LINE") {
+                    responsiveVoice.speak(word, $('#voiceselection').val(), {onend: () => handleWordEnd(0)});
+                } else {
+                    let delayMultiplier = parseInt(document.getElementById('delayMultiplier').value);
+                    let wordDelay = calculateWordDelay(word) * delayMultiplier;
+                    let punctuationDelay = 300; 
+
+                    let textToSpeak = word.replace(/([.,!?;:])/g, (match) => ` ${match}`);
+                    responsiveVoice.speak(textToSpeak, $('#voiceselection').val(), {
+                        onend: () => handleWordEnd(wordDelay + punctuationDelay)
+                    });
+                }
             }
         }
 
-        function formatWordForSpeech(word) {
-            Object.keys(punctuationMap).forEach(punctuation => {
-                word = word.replace(new RegExp(`\\${punctuation}`, 'g'), ` ${punctuationMap[punctuation]} `);
-            });
-            return word.trim();
+        function handleWordEnd(delay) {
+            if (!isPaused) {
+                updateProgress();
+                intervalId = setTimeout(readNextWord, delay);
+                currentWordIndex++;
+            }
         }
 
         function updateProgress() {
