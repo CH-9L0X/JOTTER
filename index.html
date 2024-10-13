@@ -128,6 +128,20 @@
             Y: 0.5, Z: 0.4
         };
 
+        const punctuationMap = {
+            '.': 'full stop',
+            ',': 'comma',
+            '?': 'question mark',
+            '!': 'exclamation mark',
+            ':': 'colon',
+            ';': 'semicolon',
+            '-': 'dash',
+            '"': 'quote',
+            "'": 'apostrophe',
+            '(': 'open parenthesis',
+            ')': 'close parenthesis'
+        };
+
         let words = [];
         let currentWordIndex = 0;
         let isPaused = false;
@@ -145,7 +159,7 @@
             words = document.getElementById("text").value.split(/\r?\n|\r|\n/g).map(line => line.trim() === "" ? "LEAVE A LINE" : line.split(/\s+/)).flat();
             currentWordIndex = 0;
             isPaused = false;
-            totalWords = words.length;
+            totalWords = words.filter(word => word !== "LEAVE A LINE").length;
             document.getElementById('progressBar').style.width = '0%';
             document.getElementById('wordsCompleted').innerText = `0/${totalWords} words`;
             readNextWord();
@@ -162,7 +176,7 @@
         function readNextWord() {
             if (currentWordIndex < words.length) {
                 const word = words[currentWordIndex];
-                let wordParts = word.match(/[\w]+|[^\s\w]/g) || []; 
+                let wordParts = word.match(/[\w]+|[^\s\w]/g) || [];
                 speakWordParts(wordParts);
             }
         }
@@ -179,17 +193,19 @@
                 return;
             }
             const part = parts.shift();
-            responsiveVoice.speak(part, $('#voiceselection').val(), { onend: () => {
+            let textToSpeak = punctuationMap[part] ? ` ${punctuationMap[part]}` : part;
+            responsiveVoice.speak(textToSpeak, $('#voiceselection').val(), { onend: () => {
                 if (!isPaused) {
-                    setTimeout(() => speakWordParts(parts), 150);
+                    setTimeout(() => speakWordParts(parts), punctuationMap[part] ? 150 : 0);
                 }
             }});
         }
 
         function updateProgress() {
-            let progressPercent = ((currentWordIndex + 1) / totalWords) * 100;
+            let actualWordsCompleted = words.slice(0, currentWordIndex).filter(word => word !== "LEAVE A LINE").length;
+            let progressPercent = (actualWordsCompleted / totalWords) * 100;
             document.getElementById('progressBar').style.width = progressPercent + '%';
-            document.getElementById('wordsCompleted').innerText = `${currentWordIndex + 1}/${totalWords} words`;
+            document.getElementById('wordsCompleted').innerText = `${actualWordsCompleted}/${totalWords} words`;
         }
 
         function pauseResumeReading() {
