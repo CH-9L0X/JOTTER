@@ -97,13 +97,13 @@
     </style>
 </head>
 <body>
-    <div class="update-info">Updated on: October 8, 2024</div>
+    <div class="update-info">Updated on: October 13, 2024</div>
 
     <div class="container">
         <h1>Notebook Writing Reciter</h1>
         <textarea id="text" placeholder="Enter your text here"></textarea><br>
         <label for="delayMultiplier">Delay Multiplier:</label>
-        <input type="number" id="delayMultiplier" value="600" min="50" step="50"><br>
+        <input type="number" id="delayMultiplier" value="200" min="50" step="50"><br>
         <select id="voiceselection"></select><br>
         <input type="button" value="Read Text" onclick="startReading()">
         <button id="pauseButton" onclick="pauseResumeReading()">Pause</button>
@@ -121,7 +121,6 @@
     <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
     <script src="https://code.responsivevoice.org/responsivevoice.js?key=B8pvlt8Z"></script>
     <script>
-        const updateDate = "October 8, 2024";
         const letterWeights = {
             A: 0.6, B: 0.7, C: 0.4, D: 0.5, E: 0.4, F: 0.5, G: 0.6, H: 0.5,
             I: 0.3, J: 0.4, K: 0.6, L: 0.3, M: 0.7, N: 0.6, O: 0.4, P: 0.6,
@@ -142,7 +141,7 @@
             '(': 'open parenthesis',
             ')': 'close parenthesis'
         };
-        
+
         let words = [];
         let currentWordIndex = 0;
         let isPaused = false;
@@ -157,13 +156,12 @@
         });
 
         function startReading() {
-            words = document.getElementById("text").value.trim().split(/\s+/);
+            words = document.getElementById("text").value.split(/\r?\n|\r|\n/g).map(line => line.trim() === "" ? "LEAVE A LINE" : line.split(/\s+/)).flat();
             currentWordIndex = 0;
             isPaused = false;
             totalWords = words.length;
             document.getElementById('progressBar').style.width = '0%';
             document.getElementById('wordsCompleted').innerText = `0/${totalWords} words`;
-
             readNextWord();
         }
 
@@ -183,7 +181,7 @@
                     if (!isPaused) {
                         updateProgress();
                         let delayMultiplier = parseInt(document.getElementById('delayMultiplier').value);
-                        let wordDelay = calculateWordDelay(word) * delayMultiplier;
+                        let wordDelay = (word === "LEAVE A LINE") ? 0 : calculateWordDelay(word) * delayMultiplier;
                         intervalId = setTimeout(readNextWord, wordDelay);
                         currentWordIndex++;
                     }
@@ -193,9 +191,7 @@
 
         function formatWordForSpeech(word) {
             Object.keys(punctuationMap).forEach(punctuation => {
-                if (word.includes(punctuation)) {
-                    word = word.replace(punctuation, ` ${punctuationMap[punctuation]} `);
-                }
+                word = word.replace(new RegExp(`\\${punctuation}`, 'g'), ` ${punctuationMap[punctuation]} `);
             });
             return word.trim();
         }
@@ -219,11 +215,11 @@
         }
 
         function goBackWords(count) {
-            if (currentWordIndex > count) {
-                currentWordIndex -= count;
-                isPaused = false;
-                readNextWord();
-            }
+            currentWordIndex = Math.max(0, currentWordIndex - count);
+            updateProgress();
+            isPaused = false;
+            clearTimeout(intervalId);
+            readNextWord();
         }
     </script>
 </body>
